@@ -95,22 +95,24 @@ export function generateFlexibleSchedule(options = {}) {
       const awayRestOk = !awayLast || (Math.floor((currentDate - new Date(awayLast)) / (1000 * 60 * 60 * 24)) > restDaysMin);
 
       if (homeRestOk && awayRestOk) {
-        // Find an available venue for this slot (VN-03: no conflict in same venue at same time)
-        let selectedVenue = primaryVenue;
         let venueTime = slotTimes[currentSlotIndex];
 
-        // Check if primary venue is available
+        // Rotasi Otomatis Berimbang (Multi-Venue Balanced Distribution - VN-02, VN-03)
+        const venueCount = venues.length > 0 ? venues.length : 1;
+        const preferredVenueIdx = scheduledMatches.length % venueCount;
+        let selectedVenue = venues[preferredVenueIdx] || primaryVenue;
+
+        // Check availability of preferred venue at this date and time slot
         const bookingKey = `${dateStr}_${selectedVenue.id}_${venueTime}`;
-        if (!venueSlotBooking[bookingKey]) {
-          venueSlotBooking[bookingKey] = true;
-        } else if (venues.length > 1) {
-          // Fallback to secondary venue if available
+        if (venueSlotBooking[bookingKey]) {
+          // If already booked, find any alternative venue that is free at this slot
           const altVenue = venues.find(v => !venueSlotBooking[`${dateStr}_${v.id}_${venueTime}`]);
           if (altVenue) {
             selectedVenue = altVenue;
-            venueSlotBooking[`${dateStr}_${selectedVenue.id}_${venueTime}`] = true;
           }
         }
+
+        venueSlotBooking[`${dateStr}_${selectedVenue.id}_${venueTime}`] = true;
 
         // Assign match details
         match.date = formatDisplayDate(currentDate);
@@ -139,15 +141,28 @@ export function generateFlexibleSchedule(options = {}) {
     }
   }
 
-  // If any unassigned due to strict rest constraints, assign sequentially
+  // If any unassigned due to strict rest constraints, assign sequentially with venue rotation
   if (remainingMatches.length > 0) {
     remainingMatches.forEach(m => {
       const dateStr = formatDate(currentDate);
+      const time = slotTimes[currentSlotIndex % slotTimes.length];
+      const venueCount = venues.length > 0 ? venues.length : 1;
+      const preferredVenueIdx = scheduledMatches.length % venueCount;
+      let chosenVenue = venues[preferredVenueIdx] || primaryVenue;
+
+      const bookingKey = `${dateStr}_${chosenVenue.id}_${time}`;
+      if (venueSlotBooking[bookingKey]) {
+        const alt = venues.find(v => !venueSlotBooking[`${dateStr}_${v.id}_${time}`]);
+        if (alt) chosenVenue = alt;
+      }
+      venueSlotBooking[`${dateStr}_${chosenVenue.id}_${time}`] = true;
+
       m.date = formatDisplayDate(currentDate);
       m.dateIso = dateStr;
-      m.time = slotTimes[currentSlotIndex % slotTimes.length];
-      m.venueId = primaryVenue.id;
-      m.venueName = primaryVenue.name;
+      m.time = time;
+      m.venueId = chosenVenue.id;
+      m.venueName = chosenVenue.name;
+      m.venueCity = chosenVenue.city || 'Sulawesi Tengah';
       scheduledMatches.push(m);
       currentSlotIndex++;
       if (currentSlotIndex >= slotsPerDay) {
