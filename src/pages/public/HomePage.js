@@ -63,7 +63,7 @@ export async function HomePage() {
         <div class="card mb-6" style="padding: 0.85rem 1.25rem; background: rgba(0, 191, 166, 0.08); border-color: rgba(0, 191, 166, 0.35); max-width: 580px;">
           <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: 0.5rem;">
             <div>
-              <div class="text-xs text-teal font-bold uppercase tracking-wider flex items-center gap-1">
+              <div class="text-xs text-teal font-bold uppercase tracking-wider flex items-center gap-1" id="countdown-title">
                 <span>⏱️</span> COUNTDOWN PERTANDINGAN
               </div>
               <div class="text-xs text-muted" id="countdown-label">Menuju Pembukaan / Laga Berikutnya</div>
@@ -190,33 +190,110 @@ export async function HomePage() {
       // 1. Initialize match details modal clicks
       initMatchCardDetails(allMatches);
 
-      // 2. Start Countdown Timer (NT-03)
-      startCountdownTimer(tourneyInfo?.startDate || '2026-11-10');
+      // 2. Start Dynamic Countdown Timer (NT-03)
+      startCountdownTimer(allMatches, tourneyInfo);
     }
   };
 }
 
-function startCountdownTimer(targetDateStr) {
-  const targetDate = new Date(`${targetDateStr}T15:30:00+08:00`).getTime();
+function startCountdownTimer(allMatches = [], tourneyInfo = {}) {
+  const titleEl = document.getElementById('countdown-title');
+  const labelEl = document.getElementById('countdown-label');
+  const timerBox = document.getElementById('countdown-timer-box');
+  const daysEl = document.getElementById('cd-days');
+  const hoursEl = document.getElementById('cd-hours');
+  const minsEl = document.getElementById('cd-mins');
+  const secsEl = document.getElementById('cd-secs');
+
+  if (!daysEl) return;
+
+  function parseMatchTs(m) {
+    const dStr = m.dateIso || m.date;
+    if (!dStr) return null;
+    const tStr = m.time ? (m.time.length === 5 ? m.time : m.time.padStart(5, '0')) : '08:00';
+    const ts = new Date(`${dStr}T${tStr}:00+08:00`).getTime();
+    return isNaN(ts) ? null : ts;
+  }
 
   function update() {
-    const now = new Date().getTime();
-    const distance = targetDate - now;
-
-    const daysEl = document.getElementById('cd-days');
-    const hoursEl = document.getElementById('cd-hours');
-    const minsEl = document.getElementById('cd-mins');
-    const secsEl = document.getElementById('cd-secs');
-
-    if (!daysEl) return;
-
-    if (distance < 0) {
-      document.getElementById('countdown-label').textContent = 'Turnamen Sedang Berlangsung!';
-      daysEl.textContent = '00';
-      hoursEl.textContent = '00';
-      minsEl.textContent = '00';
-      secsEl.textContent = '00';
+    const currentDaysEl = document.getElementById('cd-days');
+    if (!currentDaysEl) {
+      clearInterval(timerInterval);
       return;
+    }
+
+    const now = Date.now();
+
+    // 1. Check if any match is currently LIVE
+    const liveMatches = (allMatches || []).filter(m => m.status === 'LIVE');
+    if (liveMatches.length > 0) {
+      const live = liveMatches[0];
+      if (titleEl) {
+        titleEl.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22C55E; margin-right:4px; animation:pulse 1.5s infinite;"></span> <span style="color:#22C55E;">LIVE PERTANDINGAN</span>`;
+      }
+      if (labelEl) {
+        labelEl.innerHTML = `<strong style="color:var(--text-main);">${live.homeTeam?.name || 'Tim A'}</strong> vs <strong style="color:var(--text-main);">${live.awayTeam?.name || 'Tim B'}</strong> (${live.venue?.name || 'Stadion'})`;
+      }
+      if (timerBox) {
+        timerBox.innerHTML = `<span class="badge" style="background:rgba(34,197,94,0.2); color:#22C55E; border:1px solid rgba(34,197,94,0.4); font-size:0.85rem; padding:0.25rem 0.65rem; letter-spacing:0.05em; font-weight:700;">SEDANG BERLANGSUNG</span>`;
+      }
+      return;
+    }
+
+    // 2. Check if all matches exist and are all FINISHED
+    const isAllFinished = allMatches.length > 0 && allMatches.every(m => m.status === 'FINISHED');
+    if (isAllFinished) {
+      if (titleEl) titleEl.innerHTML = `🏆 TURNAMEN SELESAI`;
+      if (labelEl) labelEl.textContent = 'Semua pertandingan PORPROV Sulteng X telah rampung.';
+      if (timerBox) {
+        timerBox.innerHTML = `<span class="badge badge-primary" style="font-size:0.85rem;">FINAL RAMPUNG</span>`;
+      }
+      return;
+    }
+
+    // 3. Find next upcoming SCHEDULED match
+    const upcomingScheduled = (allMatches || [])
+      .filter(m => m.status === 'SCHEDULED')
+      .map(m => ({ match: m, ts: parseMatchTs(m) }))
+      .filter(item => item.ts && item.ts > now)
+      .sort((a, b) => a.ts - b.ts);
+
+    let targetTs = null;
+    let targetLabel = '';
+
+    if (upcomingScheduled.length > 0) {
+      const next = upcomingScheduled[0];
+      targetTs = next.ts;
+      const m = next.match;
+      const hName = m.homeTeam?.name || 'TBA';
+      const aName = m.awayTeam?.name || 'TBA';
+      const timeStr = m.time ? `${m.time} WITA` : '';
+      targetLabel = `Kick-Off Berikutnya: <strong>${hName} vs ${aName}</strong> (${timeStr})`;
+    } else {
+      // Fallback: Check if tournament start date is set
+      const startStr = tourneyInfo?.startDate || '2026-12-01';
+      targetTs = new Date(`${startStr}T15:30:00+08:00`).getTime();
+      targetLabel = `Menuju Pembukaan Turnamen (${startStr})`;
+    }
+
+    if (!targetTs || isNaN(targetTs)) return;
+
+    const distance = targetTs - now;
+
+    if (distance <= 0) {
+      if (labelEl) labelEl.textContent = 'Menunggu Kick-Off Pertandingan Dimulai...';
+      currentDaysEl.textContent = '00';
+      const currentHoursEl = document.getElementById('cd-hours');
+      const currentMinsEl = document.getElementById('cd-mins');
+      const currentSecsEl = document.getElementById('cd-secs');
+      if (currentHoursEl) currentHoursEl.textContent = '00';
+      if (currentMinsEl) currentMinsEl.textContent = '00';
+      if (currentSecsEl) currentSecsEl.textContent = '00';
+      return;
+    }
+
+    if (labelEl && targetLabel) {
+      labelEl.innerHTML = targetLabel;
     }
 
     const days = Math.floor(distance / (1000 * 60 * 60 * 24));
@@ -224,12 +301,16 @@ function startCountdownTimer(targetDateStr) {
     const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
     const secs = Math.floor((distance % (1000 * 60)) / 1000);
 
-    daysEl.textContent = String(days).padStart(2, '0');
-    hoursEl.textContent = String(hours).padStart(2, '0');
-    minsEl.textContent = String(mins).padStart(2, '0');
-    secsEl.textContent = String(secs).padStart(2, '0');
+    const currentHoursEl = document.getElementById('cd-hours');
+    const currentMinsEl = document.getElementById('cd-mins');
+    const currentSecsEl = document.getElementById('cd-secs');
+
+    currentDaysEl.textContent = String(days).padStart(2, '0');
+    if (currentHoursEl) currentHoursEl.textContent = String(hours).padStart(2, '0');
+    if (currentMinsEl) currentMinsEl.textContent = String(mins).padStart(2, '0');
+    if (currentSecsEl) currentSecsEl.textContent = String(secs).padStart(2, '0');
   }
 
   update();
-  setInterval(update, 1000);
+  const timerInterval = setInterval(update, 1000);
 }
