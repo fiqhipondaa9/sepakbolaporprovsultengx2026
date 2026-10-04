@@ -2,7 +2,7 @@
  * Admin Login Page
  * PRD: §4.8 AD-01 Firebase Authentication
  */
-import { loginAdmin, DEMO_ADMIN } from '../../firebase/auth.js';
+import { loginAdmin } from '../../firebase/auth.js';
 import { Toast } from '../../components/Toast.js';
 
 export function AdminLoginPage() {
@@ -42,15 +42,6 @@ export function AdminLoginPage() {
         }
       });
     }
-
-    const demoBtn = document.getElementById('btn-demo-login');
-    if (demoBtn) {
-      demoBtn.addEventListener('click', () => {
-        document.getElementById('admin-email').value = DEMO_ADMIN.email;
-        document.getElementById('admin-password').value = DEMO_ADMIN.password;
-        Toast.info('Kredensial resmi panitia otomatis terisi. Klik "Masuk" untuk melanjutkan.');
-      });
-    }
   }, 0);
 
   return `
@@ -85,12 +76,8 @@ export function AdminLoginPage() {
             <input type="password" id="admin-password" class="form-input" placeholder="••••••••••••" required />
           </div>
 
-          <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem; padding: 0.85rem;">
+          <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width: 100%; margin-bottom: 1.25rem; padding: 0.85rem;">
             Masuk ke Panel Admin
-          </button>
-
-          <button type="button" id="btn-demo-login" class="btn btn-outline btn-sm" style="width: 100%; margin-bottom: 1.25rem;">
-            ⚡ Gunakan Kredensial Panitia Resmi
           </button>
         </form>
 
