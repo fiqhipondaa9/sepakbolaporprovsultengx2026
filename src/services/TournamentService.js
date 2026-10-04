@@ -34,6 +34,7 @@ export const TournamentService = {
   async resetTournament() {
     const collectionsToClear = [
       'matches', 
+      'knockout_matches',
       'goals', 
       'cards', 
       'substitutions', 
@@ -46,9 +47,16 @@ export const TournamentService = {
       await clearCollection(col);
     }
 
+    await removeDoc('tournament', 'bracket_state');
+    await removeDoc('tournament', 'winners');
+
     // Reset tournament state back to PREPARATION
     await this.updateInfo({
       status: 'PREPARATION',
+      startDate: '2026-12-01',
+      groupStageEndDate: null,
+      finalDate: '2026-12-14',
+      totalDurationDays: null,
       lastResetAt: new Date().toISOString()
     });
 

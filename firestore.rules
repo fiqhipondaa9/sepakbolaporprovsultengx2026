@@ -63,8 +63,24 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /knockout_matches/{matchId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /standings/{standingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /auditLogs/{logId} {
       allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Aturan penangkap umum untuk koleksi masa depan
+    match /{document=**} {
+      allow read: if true;
       allow write: if isAdmin();
     }
   }
