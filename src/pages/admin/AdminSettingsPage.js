@@ -75,7 +75,19 @@ export async function AdminSettingsPage() {
                 PERINGATAN: Tindakan ini akan mengosongkan seluruh jadwal pertandingan, hasil skor, catatan kartu, dan riwayat pengundian grup!
               </p>
               <p class="text-xs text-muted mb-3">Ketik kata kunci <strong>RESET-PORPROV-2026</strong> di bawah ini untuk mengonfirmasi:</p>
-              <input type="text" id="confirm-reset-input" class="form-input" placeholder="RESET-PORPROV-2026" autofocus />
+              <input type="text" id="confirm-reset-input" class="form-input mb-3" placeholder="RESET-PORPROV-2026" autofocus />
+
+              <div style="padding: 0.85rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-md);">
+                <label style="display: flex; align-items: flex-start; gap: 0.65rem; cursor: pointer; font-size: 0.85rem; color: var(--text-main); margin: 0;">
+                  <input type="checkbox" id="reset-include-teams" style="margin-top: 0.2rem; cursor: pointer; width: 16px; height: 16px;" />
+                  <span>
+                    <strong style="color: var(--color-danger);">Ikut hapus seluruh data tim peserta (menjadi 0 tim)</strong>
+                    <span style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                      Jika dicentang, seluruh profil tim, pemain, dan ofisial akan dihapus bersih dari sistem. Jika tidak dicentang, profil tim tetap tersimpan dan hanya alokasi grupnya yang dikosongkan.
+                    </span>
+                  </span>
+                </label>
+              </div>
             </div>
           `,
           buttons: [
@@ -86,17 +98,23 @@ export async function AdminSettingsPage() {
               action: 'confirm', 
               onClick: async (m) => {
                 const val = document.getElementById('confirm-reset-input')?.value;
+                const includeTeams = document.getElementById('reset-include-teams')?.checked || false;
                 if (val === 'RESET-PORPROV-2026') {
                   m.close();
                   try {
-                    await TournamentService.resetTournament();
+                    await TournamentService.resetTournament({ includeTeams });
                     await AuditLogService.logActivity(
                       'Reset Turnamen',
-                      'Seluruh jadwal, skor, kartu, dan hasil undian di-reset oleh panitia',
+                      includeTeams 
+                        ? 'Seluruh jadwal, skor, kartu, hasil undian, dan data seluruh tim peserta di-reset oleh panitia'
+                        : 'Seluruh jadwal, skor, kartu, dan hasil undian di-reset oleh panitia (data tim dipertahankan)',
                       'settings',
                       '⚠️'
                     );
-                    Toast.success('Turnamen telah berhasil direset ke status persiapan awal!');
+                    Toast.success(includeTeams 
+                      ? 'Turnamen dan seluruh data tim peserta telah berhasil direset!' 
+                      : 'Turnamen telah berhasil direset ke status persiapan awal (data tim dipertahankan)!'
+                    );
                     setTimeout(() => window.location.hash = '#/admin', 1000);
                   } catch (err) {
                     Toast.error('Gagal mereset turnamen: ' + err.message);

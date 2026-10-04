@@ -30,8 +30,11 @@ export const TournamentService = {
 
   /**
    * Reset all tournament data to fresh state (PRD AD-06)
+   * @param {Object} [options]
+   * @param {boolean} [options.includeTeams=false] Whether to also clear teams, players, and officials
    */
-  async resetTournament() {
+  async resetTournament(options = {}) {
+    const { includeTeams = false } = options;
     const collectionsToClear = [
       'matches', 
       'knockout_matches',
@@ -42,6 +45,10 @@ export const TournamentService = {
       'drawHistory', 
       'standings'
     ];
+
+    if (includeTeams) {
+      collectionsToClear.push('teams', 'players', 'officials');
+    }
 
     for (const col of collectionsToClear) {
       await clearCollection(col);
@@ -60,14 +67,16 @@ export const TournamentService = {
       lastResetAt: new Date().toISOString()
     });
 
-    // Re-seed teams with unassigned groups
-    const teams = await getCollectionDocs('teams');
-    for (const team of teams) {
-      await saveDoc('teams', team.id, {
-        ...team,
-        groupId: null,
-        groupSlot: null
-      });
+    if (!includeTeams) {
+      // Re-seed teams with unassigned groups
+      const teams = await getCollectionDocs('teams');
+      for (const team of teams) {
+        await saveDoc('teams', team.id, {
+          ...team,
+          groupId: null,
+          groupSlot: null
+        });
+      }
     }
 
     return true;
