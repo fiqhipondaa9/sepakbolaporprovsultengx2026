@@ -9,7 +9,11 @@ const COLLECTION = 'groups';
 export const GroupService = {
   async getAll() {
     const groups = await getCollectionDocs(COLLECTION);
-    return groups.sort((a, b) => (a.order || 0) - (b.order || 0));
+    return groups.sort((a, b) => {
+      const orderDiff = (a.order || 0) - (b.order || 0);
+      if (orderDiff !== 0) return orderDiff;
+      return (a.letter || a.id || '').localeCompare(b.letter || b.id || '');
+    });
   },
 
   async saveGroup(groupId, groupData) {

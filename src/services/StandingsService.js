@@ -34,6 +34,8 @@ export const StandingsService = {
       }
     }
 
+    activeGroups.sort((a, b) => (a.letter || a.id || '').localeCompare(b.letter || b.id || ''));
+
     if (activeGroups.length === 0) {
       return [];
     }

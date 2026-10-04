@@ -5,7 +5,7 @@
  */
 
 export function createGroupDisplay(groups = {}, isLocked = false) {
-  const letters = Object.keys(groups);
+  const letters = Object.keys(groups).sort((a, b) => a.localeCompare(b));
   if (letters.length === 0) {
     return `
       <div class="card text-center" style="padding: 2.5rem; color: var(--text-muted); border-style: dashed;">

@@ -34,6 +34,7 @@ export function executeGroupDraw(teams, groupCount = 4, seededMode = 'ranked') {
     const letter = GROUP_LETTERS[i];
     groups[letter] = {
       letter,
+      order: i + 1,
       name: `Grup ${letter}`,
       teams: []
     };
