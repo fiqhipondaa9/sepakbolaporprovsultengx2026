@@ -54,19 +54,32 @@ export function createMatchCard(match) {
         </div>
       </div>
 
-      <div class="match-card-footer">
-        <span class="flex items-center gap-1">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          ${match.date} &bull; ${match.time}
-        </span>
-        <button type="button" class="btn btn-ghost btn-sm text-gold btn-view-match-detail" data-match-id="${match.id}" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">
-          Detail Laga &rarr;
-        </button>
+      <div class="match-card-footer" style="display: flex; flex-direction: column; align-items: stretch; gap: 0.45rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%;">
+          <span class="flex items-center gap-1.5 text-xs text-slate-300">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gold">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>${match.date} &bull; ${match.time}</span>
+          </span>
+          <button type="button" class="btn btn-ghost btn-sm text-gold btn-view-match-detail" data-match-id="${match.id}" style="padding: 0.15rem 0.45rem; font-size: 0.72rem;">
+            Detail Laga &rarr;
+          </button>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; padding-top: 0.35rem; border-top: 1px dashed rgba(255, 255, 255, 0.08); font-size: 0.75rem;">
+          <span class="flex items-center gap-1.5 text-teal" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${match.venueName || 'Stadion Utama Morowali'}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span class="font-medium" style="color: var(--color-secondary-light); font-size: 0.75rem;">🏟️ ${match.venueName || 'Stadion Utama Morowali'}</span>
+          </span>
+          ${match.venueCity ? `<span class="badge badge-muted" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; flex-shrink: 0;">${match.venueCity}</span>` : ''}
+        </div>
       </div>
     </div>
   `;

@@ -170,13 +170,18 @@ export async function AdminSchedulePage() {
 
     <!-- Match Filters Bar -->
     <div class="flex items-center justify-between mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2" style="flex-wrap: wrap;">
         <select id="filter-schedule-group" class="form-select" style="width: auto; padding: 0.4rem 0.75rem; font-size: 0.85rem;">
           <option value="all">Semua Grup</option>
           <option value="A">Grup A</option>
           <option value="B">Grup B</option>
           <option value="C">Grup C</option>
           <option value="D">Grup D</option>
+        </select>
+
+        <select id="filter-schedule-venue" class="form-select" style="width: auto; padding: 0.4rem 0.75rem; font-size: 0.85rem;">
+          <option value="all">Semua Stadion / Venue</option>
+          ${venues.map(v => `<option value="${v.id}">${v.name}</option>`).join('')}
         </select>
 
         <select id="filter-schedule-status" class="form-select" style="width: auto; padding: 0.4rem 0.75rem; font-size: 0.85rem;">
@@ -187,7 +192,7 @@ export async function AdminSchedulePage() {
       </div>
 
       <div style="font-size: 0.8rem; color: var(--text-dim);">
-        Gunakan <strong>"Tukar Slot"</strong> atau <strong>"Edit Jadwal"</strong> untuk menyesuaikan tanggal & venue.
+        Gunakan <strong>"Tukar Slot"</strong> atau <strong>"Edit Jadwal / Venue"</strong> untuk menyesuaikan tanggal, jam & stadion.
       </div>
     </div>
 
@@ -201,19 +206,34 @@ export async function AdminSchedulePage() {
         </div>
       ` : `
         <div class="grid grid-cols-1 md-grid-cols-2 gap-4">
-          ${matches.map(m => `
-            <div class="schedule-match-card-wrapper" data-group="${m.groupId}" data-status="${m.status}">
-              ${createMatchCard(m)}
-              <div style="margin-top: -0.5rem; margin-bottom: 0.5rem; display: flex; justify-content: flex-end; gap: 0.5rem; padding-right: 0.5rem;">
-                <button type="button" class="btn btn-ghost btn-sm text-teal btn-edit-match-slot" data-match-id="${m.id}" style="font-size: 0.75rem;">
-                  ✏️ Edit Jadwal / Venue
-                </button>
-                <button type="button" class="btn btn-ghost btn-sm text-gold btn-swap-match" data-match-id="${m.id}" style="font-size: 0.75rem;">
-                  🔄 Tukar Slot
-                </button>
+          ${matches.map(m => {
+            const isConflict = matches.some(other => 
+              other.id !== m.id && 
+              other.dateIso === m.dateIso && 
+              other.time === m.time && 
+              (other.venueId === m.venueId || other.groupId === m.groupId)
+            );
+
+            return `
+              <div class="schedule-match-card-wrapper" data-group="${m.groupId}" data-status="${m.status}" data-venue="${m.venueId || ''}">
+                ${isConflict ? `
+                  <div style="margin-bottom: 0.35rem; padding: 0.35rem 0.65rem; background: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-danger); border-radius: var(--radius-sm); font-size: 0.72rem; color: #FCA5A5; display: flex; align-items: center; justify-content: space-between;">
+                    <span>⚠️ <strong>BENTROK JADWAL/VENUE:</strong> Jam & stadion bersamaan dengan laga lain!</span>
+                    <span class="badge badge-danger" style="font-size: 0.6rem;">Konflik</span>
+                  </div>
+                ` : ''}
+                ${createMatchCard(m)}
+                <div style="margin-top: -0.5rem; margin-bottom: 0.5rem; display: flex; justify-content: flex-end; gap: 0.5rem; padding-right: 0.5rem;">
+                  <button type="button" class="btn btn-ghost btn-sm text-teal btn-edit-match-slot" data-match-id="${m.id}" style="font-size: 0.75rem;">
+                    ✏️ Edit Jadwal / Venue
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm text-gold btn-swap-match" data-match-id="${m.id}" style="font-size: 0.75rem;">
+                    🔄 Tukar Slot
+                  </button>
+                </div>
               </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       `}
     </div>
@@ -243,6 +263,37 @@ function initSchedulePageEvents(matches, venues, tourneyInfo, groupsList) {
 
   // Initialize Match Card Detail Modal Click Handlers (PB-04)
   initMatchCardDetails(matches);
+
+  // Group, Venue & Status Match Filters
+  const filterGroup = document.getElementById('filter-schedule-group');
+  const filterVenue = document.getElementById('filter-schedule-venue');
+  const filterStatus = document.getElementById('filter-schedule-status');
+
+  function applyScheduleFilters() {
+    const gVal = filterGroup?.value || 'all';
+    const vVal = filterVenue?.value || 'all';
+    const sVal = filterStatus?.value || 'all';
+
+    document.querySelectorAll('.schedule-match-card-wrapper').forEach(card => {
+      const cardGroup = card.getAttribute('data-group');
+      const cardVenue = card.getAttribute('data-venue');
+      const cardStatus = card.getAttribute('data-status');
+
+      const matchGroup = gVal === 'all' || cardGroup === gVal;
+      const matchVenue = vVal === 'all' || cardVenue === vVal;
+      const matchStatus = sVal === 'all' || cardStatus === sVal;
+
+      if (matchGroup && matchVenue && matchStatus) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  [filterGroup, filterVenue, filterStatus].forEach(el => {
+    if (el) el.addEventListener('change', applyScheduleFilters);
+  });
 
   // Dynamic preview banner calculation (JD-23)
   function updateDurationBanner() {
