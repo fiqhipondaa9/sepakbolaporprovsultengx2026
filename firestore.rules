@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Fungsi pembantu verifikasi admin
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // Public Read-Only, Admin Full Access
+    match /tournament/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /players/{playerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /officials/{officialId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /groups/{groupId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /matches/{matchId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /goals/{goalId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /cards/{cardId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /substitutions/{subId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /venues/{venueId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /drawHistory/{historyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}
